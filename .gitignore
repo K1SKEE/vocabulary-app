@@ -24,4 +24,6 @@ yarn-debug.log*
 yarn-error.log*
 
 venv/
+__pycache__
 .env
+alembic.ini
