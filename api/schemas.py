@@ -1,5 +1,3 @@
-from typing import Union
-
 from pydantic import BaseModel
 
 
@@ -8,6 +6,17 @@ class Model(BaseModel):
         orm_mode = True
 
 
-class UserCreate(BaseModel):
+class UserCreateForm(BaseModel):
+    username: str
+    password_1: str
+    password_2: str
+
+
+class UserCreateResponse(BaseModel):
     username: str
     password: str
+
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str = 'Bearer'
