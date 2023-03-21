@@ -6,8 +6,14 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
-from api.schemas import UserCreateForm, Token, UserCreateResponse
-from api.services import _create_new_user, _authenticate_user
+from api.schemas import (
+    UserCreateForm, Token, UserCreateResponse, AddWordResponse, AddWordForm
+)
+from api.services import (
+    _create_new_user, _authenticate_user, get_current_user_from_token,
+    _add_new_word
+)
+from db.models import User
 from db.session import get_db
 
 logger = getLogger(__name__)
@@ -42,3 +48,12 @@ async def login_for_access_token(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Incorrect username or password")
     return Token(access_token=token)
+
+
+@user_router.post('/add', response_model=AddWordResponse)
+async def add_new_word_to_vocabulary(
+        body: AddWordForm,
+        db: AsyncSession = Depends(get_db),
+        current_user: User = Depends(get_current_user_from_token)
+) -> AddWordResponse | None:
+    return await _add_new_word(body, current_user, db)
