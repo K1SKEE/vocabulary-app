@@ -5,8 +5,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 import settings
-from api.schemas import UserCreateForm, UserCreateResponse, Token, \
-    AddWordResponse, AddWordForm
+from api.schemas import (UserCreateForm, UserCreateResponse, Token,
+                         AddWordResponse, AddWordForm, Vocabulary)
 from db.managers import UserManager, DictionaryManager
 from db.models import User
 from api.utils import Hasher, create_access_token
@@ -83,3 +83,17 @@ async def _add_new_word(
             eng=body.eng, ukr=body.ukr, user=user
         )
         return AddWordResponse(eng=result.eng, ukr=result.ukr)
+
+
+async def _get_vocabulary(user: User,
+                          session: AsyncSession) -> Vocabulary:
+    async with session.begin():
+        user_manager = UserManager(session)
+        result = await user_manager.get_user_vocabulary(user.username)
+        vocabulary = [{
+            'eng': row.eng,
+            'ukr': row.ukr,
+            'flag': row.flag,
+            'id': row.id
+        } for row in result]
+        return Vocabulary(vocabulary=vocabulary)
