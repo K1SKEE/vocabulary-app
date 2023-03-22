@@ -1,4 +1,7 @@
-from fastapi import HTTPException, Depends
+from typing import Generator
+import random
+
+from fastapi import HTTPException, Depends, WebSocket
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -6,10 +9,10 @@ from starlette import status
 
 import settings
 from api.schemas import (UserCreateForm, UserCreateResponse, Token,
-                         AddWordResponse, AddWordForm, Vocabulary)
+                         AddWordResponse, AddWordForm, Vocabulary, Word)
 from db.managers import UserManager, DictionaryManager
 from db.models import User
-from api.utils import Hasher, create_access_token
+from api.utils import Hasher, JWT, ConnectionManager
 from db.session import get_db
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/token")
@@ -48,7 +51,7 @@ async def _authenticate_user(username: str,
         return
     if not Hasher.check_password(password, user.hashed_password, user.salt):
         return
-    token = create_access_token(user=user)
+    token = JWT.create_access_token(user=user)
     return token
 
 
@@ -97,3 +100,33 @@ async def _get_vocabulary(user: User,
             'id': row.id
         } for row in result]
         return Vocabulary(vocabulary=vocabulary)
+
+
+def _get_word_generator(vocabulary: list) -> Generator:
+    random.shuffle(vocabulary)
+    for word in vocabulary:
+        yield word
+
+
+def check_answer(answer: str, word: Word):
+    if answer == word.ukr:
+        return True
+    if answer in word.ukr:
+        return True
+
+
+async def _ws_word_repetition_service(
+        websocket: WebSocket,
+        session: AsyncSession,
+        user: User,
+        manager: ConnectionManager) -> None:
+    async with session.begin():
+        user_manager = UserManager(session)
+        vocabulary = await user_manager.get_user_vocabulary(user.username)
+    for word in _get_word_generator(vocabulary):
+        await manager.send_personal_message(word.eng, websocket)
+        answer = await websocket.receive_text()
+        if check_answer(answer, Word(**word)):
+            await manager.send_personal_message("Right answer!", websocket)
+        else:
+            await manager.send_personal_message("Wrong answer!", websocket)
