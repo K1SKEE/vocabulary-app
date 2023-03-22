@@ -1,3 +1,5 @@
+from typing import List
+
 from sqlalchemy import select, update, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,6 +28,11 @@ class UserManager:
         user_data = result.fetchone()
         if user_data is not None:
             return user_data[0]
+
+    async def get_user_vocabulary(self, username: str) -> List[Dictionary]:
+        query = select(Dictionary).join(User).where(User.username == username)
+        result = await self.db_session.execute(query)
+        return [row[0] for row in result.fetchall()]
 
 
 class DictionaryManager:
