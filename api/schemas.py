@@ -1,4 +1,5 @@
 import re
+from typing import List
 
 from fastapi import HTTPException
 from pydantic import BaseModel, validator
@@ -52,3 +53,14 @@ class AddWordForm(BaseModel):
 class AddWordResponse(BaseModel):
     eng: str
     ukr: str
+
+
+class Word(BaseModel):
+    eng: str
+    ukr: str
+    flag: bool
+    id: int
+
+
+class Vocabulary(BaseModel):
+    vocabulary: List[Word]
