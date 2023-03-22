@@ -1,18 +1,20 @@
 from logging import getLogger
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, WebSocket
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 from api.schemas import (
-    UserCreateForm, Token, UserCreateResponse, AddWordResponse, AddWordForm
+    UserCreateForm, Token, UserCreateResponse, AddWordResponse, AddWordForm,
+    Vocabulary
 )
 from api.services import (
     _create_new_user, _authenticate_user, get_current_user_from_token,
-    _add_new_word, _get_vocabulary
+    _add_new_word, _get_vocabulary, _ws_word_repetition_service
 )
+from api.utils import ConnectionManager, get_manager
 from db.models import User
 from db.session import get_db
 
@@ -34,7 +36,8 @@ async def register_user(body: UserCreateForm,
         return result
     except IntegrityError as err:
         logger.error(err)
-        raise HTTPException(status_code=503, detail=f"Database error: {err}")
+        raise HTTPException(status_code=503,
+                            detail=f"Database error: User already exists.")
 
 
 @login_router.post("/token", response_model=Token)
@@ -59,9 +62,21 @@ async def add_new_word_to_vocabulary(
     return await _add_new_word(body, current_user, db)
 
 
-@user_router.get('/vocabulary')
+@user_router.get('/vocabulary', response_model=Vocabulary)
 async def get_vocabulary(
         db: AsyncSession = Depends(get_db),
         current_user: User = Depends(get_current_user_from_token)
-):
+) -> Vocabulary:
     return await _get_vocabulary(user=current_user, session=db)
+
+
+@user_router.websocket('/ws')
+async def ws_word_repetition_service(
+        websocket: WebSocket,
+        db: AsyncSession = Depends(get_db),
+        current_user: User = Depends(get_current_user_from_token),
+        manager: ConnectionManager = Depends(get_manager)
+) -> None:
+    await manager.connect(websocket)
+    await _ws_word_repetition_service(websocket, db, current_user, manager)
+    manager.disconnect(websocket)
