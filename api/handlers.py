@@ -11,7 +11,7 @@ from api.schemas import (
 )
 from api.services import (
     _create_new_user, _authenticate_user, get_current_user_from_token,
-    _add_new_word
+    _add_new_word, _get_vocabulary
 )
 from db.models import User
 from db.session import get_db
@@ -57,3 +57,11 @@ async def add_new_word_to_vocabulary(
         current_user: User = Depends(get_current_user_from_token)
 ) -> AddWordResponse | None:
     return await _add_new_word(body, current_user, db)
+
+
+@user_router.get('/vocabulary')
+async def get_vocabulary(
+        db: AsyncSession = Depends(get_db),
+        current_user: User = Depends(get_current_user_from_token)
+):
+    return await _get_vocabulary(user=current_user, session=db)
