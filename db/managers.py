@@ -44,11 +44,21 @@ class DictionaryManager:
             self, eng: str,
             ukr: str,
             user: User) -> Dictionary:
-        new_word = Dictionary(
-            eng=eng,
-            ukr=ukr,
-            user_id=user.user_id
-        )
+        new_word = Dictionary(eng=eng, ukr=ukr, user_id=user.user_id)
         self.db_session.add(new_word)
         await self.db_session.flush()
         return new_word
+
+    async def update_vocabulary(self, word_id: int, user_id: int,
+                                **kwargs) -> Dictionary:
+        query = (
+            update(Dictionary)
+            .where(and_(Dictionary.user_id == user_id,
+                        Dictionary.id == word_id))
+            .values(kwargs)
+            .returning(Dictionary)
+        )
+        result = await self.db_session.execute(query)
+        row = result.fetchone()
+        if row is not None:
+            return row[0]
