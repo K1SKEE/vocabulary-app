@@ -77,9 +77,9 @@ async def update_word(
         db: AsyncSession = Depends(get_db),
         current_user: User = Depends(get_current_user_from_token)
 ) -> Word:
-    updated_word_params = body.dict()
-    return await update_word_from_vocabulary(updated_word_params, db,
-                                             current_user)
+    updated_word_params = body.dict(exclude_none=True)
+    return await update_word_from_vocabulary(
+        body=updated_word_params, session=db, user=current_user)
 
 
 @user_router.websocket('/ws')
