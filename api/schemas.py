@@ -1,5 +1,5 @@
 import re
-from typing import List
+from typing import List, Optional
 
 from fastapi import HTTPException
 from pydantic import BaseModel, validator
@@ -56,10 +56,26 @@ class AddWordResponse(BaseModel):
 
 
 class Word(BaseModel):
-    eng: str
-    ukr: str
-    flag: bool
     id: int
+    eng: Optional[str]
+    ukr: Optional[str]
+    flag: Optional[bool]
+
+    @validator('eng')
+    def validate_eng(cls, value):
+        if not ENG_LETTER_MATCH_PATTERN.match(value):
+            raise HTTPException(
+                status_code=422, detail="Eng should contains only eng letters"
+            )
+        return value
+
+    @validator('ukr')
+    def validate_ukr(cls, value):
+        if not UKR_LETTER_MATCH_PATTERN.match(value):
+            raise HTTPException(
+                status_code=422, detail="Ukr should contains only ukr letters"
+            )
+        return value
 
 
 class Vocabulary(BaseModel):
