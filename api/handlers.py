@@ -8,11 +8,12 @@ from starlette import status
 
 from api.schemas import (
     UserCreateForm, Token, UserCreateResponse, AddWordResponse, AddWordForm,
-    Vocabulary
+    Vocabulary, Word
 )
 from api.services import (
     _create_new_user, _authenticate_user, get_current_user_from_token,
-    _add_new_word, _get_vocabulary, _ws_word_repetition_service
+    _add_new_word, _get_vocabulary, _ws_word_repetition_service,
+    update_word_from_vocabulary
 )
 from api.utils import ConnectionManager, get_manager
 from db.models import User
@@ -68,6 +69,17 @@ async def get_vocabulary(
         current_user: User = Depends(get_current_user_from_token)
 ) -> Vocabulary:
     return await _get_vocabulary(user=current_user, session=db)
+
+
+@user_router.patch('/vocabulary', response_model=Word)
+async def update_word(
+        body: Word,
+        db: AsyncSession = Depends(get_db),
+        current_user: User = Depends(get_current_user_from_token)
+) -> Word:
+    updated_word_params = body.dict()
+    return await update_word_from_vocabulary(updated_word_params, db,
+                                             current_user)
 
 
 @user_router.websocket('/ws')
