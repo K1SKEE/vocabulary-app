@@ -102,6 +102,27 @@ async def _get_vocabulary(user: User,
         return Vocabulary(vocabulary=vocabulary)
 
 
+async def update_word_from_vocabulary(
+        body: dict,
+        session: AsyncSession,
+        user: User) -> Word:
+    word_id = body.pop('id')
+    async with session.begin():
+        dictionary_manager = DictionaryManager(session)
+        result = await dictionary_manager.update_vocabulary(
+            word_id=word_id,
+            user_id=user.user_id,
+            **body
+        )
+        return Word(
+            id=result.id,
+            eng=result.eng,
+            ukr=result.ukr,
+            flag=result.flag,
+            user_id=result.user_id
+        )
+
+
 def _get_word_generator(vocabulary: list) -> Generator:
     random.shuffle(vocabulary)
     for word in vocabulary:
