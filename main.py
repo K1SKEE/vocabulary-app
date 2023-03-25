@@ -1,10 +1,19 @@
 import uvicorn
 from fastapi import FastAPI
 from fastapi.routing import APIRouter
+from fastapi.middleware.cors import CORSMiddleware
 
 from api.handlers import user_router, login_router
 
 app = FastAPI(title="vocabulary-app")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 main_api_router = APIRouter(prefix="/api/v1")
 
