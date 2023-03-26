@@ -28,7 +28,7 @@ const Header = (props) => {
                                 <NavLink className='nav-link' to="/add">Додати нові слова</NavLink>
                                 <NavLink className='nav-link' to="/vocabulary">Словниковий запас</NavLink>
                                 <NavLink className='nav-link' to="/repetition">Повторення слів</NavLink>
-                                <NavLink className='nav-link' onClick={handleLogout}>Вихід</NavLink>
+                                <Nav.Link className='nav-link' onClick={handleLogout}>Вихід</Nav.Link>
                             </Nav>
 
                         </> :
