@@ -40,8 +40,6 @@ label {
     color: rgb(34, 34, 34);
 }
 
-
-
 .Result-container {
     display: flex;
     justify-content: center;
@@ -86,4 +84,13 @@ label {
 .Result-value {
     font-size: 16px;
     color: rgb(34, 34, 34);
+}
+
+.repetition {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 30px;
+    font-weight: 600;
+    color: rgb(221, 15, 15);
 }
