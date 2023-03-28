@@ -1,10 +1,11 @@
 from logging import getLogger
 
-from fastapi import APIRouter, Depends, HTTPException, WebSocket
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, Query
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
+from starlette.websockets import WebSocketDisconnect
 
 from api.schemas import (
     UserCreateForm, Token, UserCreateResponse, AddWordResponse, AddWordForm,
@@ -83,12 +84,17 @@ async def update_word(
 
 
 @user_router.websocket('/ws')
-async def ws_word_repetition_service(
+async def ws_repetition_service(
         websocket: WebSocket,
+        token: str = Query(...),
         db: AsyncSession = Depends(get_db),
-        current_user: User = Depends(get_current_user_from_token),
         manager: ConnectionManager = Depends(get_manager)
 ) -> None:
-    await manager.connect(websocket)
-    await _ws_word_repetition_service(websocket, db, current_user, manager)
-    manager.disconnect(websocket)
+    try:
+        if token:
+            current_user = await get_current_user_from_token(token, db)
+            await manager.connect(websocket)
+            await _ws_word_repetition_service(websocket, db, current_user,
+                                              manager)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)

@@ -4,8 +4,8 @@ from typing import List, Optional
 from fastapi import HTTPException
 from pydantic import BaseModel, validator
 
-ENG_LETTER_MATCH_PATTERN = re.compile(r"^[a-zA-Z\-]+$")
-UKR_LETTER_MATCH_PATTERN = re.compile(r"^[а-щьюяєіїґА-ЩЬЮЯЄІЇҐ\-]+$")
+ENG_LETTER_MATCH_PATTERN = re.compile(r"^[a-zA-Z\-\(\)\s]+$")
+UKR_LETTER_MATCH_PATTERN = re.compile(r"^[а-щьюяєіїґА-ЩЬЮЯЄІЇҐ'\-\(\)\s,]+$")
 
 
 class Model(BaseModel):

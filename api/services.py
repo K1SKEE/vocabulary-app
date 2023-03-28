@@ -6,6 +6,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
+from websockets.exceptions import ConnectionClosedError
 
 import settings
 from api.schemas import (UserCreateForm, UserCreateResponse, Token,
@@ -129,25 +130,32 @@ def _get_word_generator(vocabulary: list) -> Generator:
         yield word
 
 
-def check_answer(answer: str, word: Word):
-    if answer == word.ukr:
+def check_answer(answer: str, word: str) -> bool | None:
+    if answer == word:
         return True
-    if answer in word.ukr:
+    word_list = word.split(', ')
+    if answer in word_list:
         return True
 
 
-async def _ws_word_repetition_service(
-        websocket: WebSocket,
-        session: AsyncSession,
-        user: User,
-        manager: ConnectionManager) -> None:
+async def _ws_repetition_service(websocket: WebSocket,
+                                 session: AsyncSession,
+                                 user: User,
+                                 manager: ConnectionManager) -> None:
     async with session.begin():
         user_manager = UserManager(session)
-        vocabulary = await user_manager.get_user_vocabulary(user.username)
+        vocabulary = await user_manager.get_user_vocabulary_for_repetition(
+            user.username
+        )
     for word in _get_word_generator(vocabulary):
-        await manager.send_personal_message(word.eng, websocket)
-        answer = await websocket.receive_text()
-        if check_answer(answer, Word(**word)):
-            await manager.send_personal_message("Right answer!", websocket)
-        else:
-            await manager.send_personal_message("Wrong answer!", websocket)
+        try:
+            await manager.send_personal_message({"eng": word.eng}, websocket)
+            answer = await websocket.receive_text()
+            if check_answer(answer, word.ukr):
+                await manager.send_personal_message(
+                    {"result": "Right answer!"}, websocket)
+            else:
+                await manager.send_personal_message(
+                    {"result": "Wrong answer!"}, websocket)
+        except ConnectionClosedError:
+            pass
