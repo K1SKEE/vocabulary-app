@@ -7,7 +7,7 @@ const Repetition = (props) => {
     const accessToken = localStorage.getItem('access_token');
 
     const [socket, setSocket] = useState(null)
-    const [word, setWord] = useState({});
+    const [word, setWord] = useState('');
     const [answer, setAnswer] = useState('');
     const [checkResult, setCheckResult] = useState('');
     const formRef = useRef();
@@ -22,7 +22,11 @@ const Repetition = (props) => {
 
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
-            setWord(data)
+            if (data.eng) {
+                setWord(data.eng);
+            } else if (data.result) {
+                setCheckResult(data.result);
+            }
         };
 
         ws.onerror = function (error) {
@@ -38,20 +42,8 @@ const Repetition = (props) => {
 
     const handleCheckWord = (event) => {
         event.preventDefault();
-        if (answer === word.ukr) {
-            setCheckResult('Right answer!')
-        } if (word.ukr.includes(answer)) {
-            setCheckResult('Right answer!')
-        } else {
-            setCheckResult('Wrong answer!')
-        }
-    };
-
-    const handleNextWord = (event) => {
-        event.preventDefault();
-        setCheckResult(false);
-        socket.send('')
-        setAnswer("");
+        socket.send(answer);
+        setAnswer('');
         formRef.current.reset();
     };
 
@@ -62,7 +54,7 @@ const Repetition = (props) => {
                     <div className="Auth-form-content">
                         <h3 className="Auth-form-title">Повторення слів</h3>
                         <div className="form-group mt-3">
-                            <div className='label repetition'>{word.eng}</div>
+                            <div className='label repetition'>{word}</div>
                             <br></br>
                             <label>Напишіть переклад українською</label>
                             <InputGroup className="mb-3">
@@ -80,9 +72,6 @@ const Repetition = (props) => {
                         <div className="d-grid gap-2 mt-3">
                             <button type="button" className="btn btn-primary" onClick={handleCheckWord}>
                                 Перевірити
-                            </button>
-                            <button type="button" className="btn btn-primary" onClick={handleNextWord}>
-                                Next
                             </button>
                         </div>
                     </div>
