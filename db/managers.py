@@ -1,6 +1,6 @@
 from typing import List
 
-from sqlalchemy import select, update, and_
+from sqlalchemy import select, update, and_, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import User, Dictionary
@@ -23,14 +23,32 @@ class UserManager:
         return new_user
 
     async def get_user(self, username: str) -> User | None:
-        query = select(User).where(User.username == username)
+        query = (
+            select(User)
+            .where(User.username == username)
+        )
         result = await self.db_session.execute(query)
         user_data = result.fetchone()
         if user_data is not None:
             return user_data[0]
 
     async def get_user_vocabulary(self, username: str) -> List[Dictionary]:
-        query = select(Dictionary).join(User).where(User.username == username)
+        query = (
+            select(Dictionary)
+            .join(User)
+            .where(User.username == username)
+        )
+        result = await self.db_session.execute(query)
+        return [row[0] for row in result.fetchall()]
+
+    async def get_user_vocabulary_for_repetition(
+            self, username: str) -> List[Dictionary]:
+        query = (
+            select(Dictionary)
+            .join(User)
+            .where(and_(User.username == username,
+                        Dictionary.flag == True))
+        )
         result = await self.db_session.execute(query)
         return [row[0] for row in result.fetchall()]
 
@@ -40,10 +58,8 @@ class DictionaryManager:
     def __init__(self, db_session: AsyncSession):
         self.db_session = db_session
 
-    async def add_to_vocabulary(
-            self, eng: str,
-            ukr: str,
-            user: User) -> Dictionary:
+    async def add_to_vocabulary(self, eng: str, ukr: str,
+                                user: User) -> Dictionary:
         new_word = Dictionary(eng=eng, ukr=ukr, user_id=user.user_id)
         self.db_session.add(new_word)
         await self.db_session.flush()
@@ -62,3 +78,13 @@ class DictionaryManager:
         row = result.fetchone()
         if row is not None:
             return row[0]
+
+    async def delete_word_from_vocabulary(
+            self, word_id: int, user_id: int) -> None:
+        query = (
+            delete(Dictionary)
+            .where(and_(Dictionary.user_id == user_id,
+                        Dictionary.id == word_id))
+        )
+        await self.db_session.execute(query)
+        await self.db_session.commit()
