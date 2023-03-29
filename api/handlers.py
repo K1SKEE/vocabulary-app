@@ -1,10 +1,11 @@
 from logging import getLogger
 
-from fastapi import APIRouter, Depends, HTTPException, WebSocket
+from fastapi import APIRouter, Depends, HTTPException, WebSocket, Query
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
+from starlette.websockets import WebSocketDisconnect
 
 from api.schemas import (
     UserCreateForm, Token, UserCreateResponse, AddWordResponse, AddWordForm,
@@ -12,8 +13,8 @@ from api.schemas import (
 )
 from api.services import (
     _create_new_user, _authenticate_user, get_current_user_from_token,
-    _add_new_word, _get_vocabulary, _ws_word_repetition_service,
-    update_word_from_vocabulary
+    _add_new_word, _get_vocabulary, _ws_repetition_service,
+    update_word_from_vocabulary, _refresh_token
 )
 from api.utils import ConnectionManager, get_manager
 from db.models import User
@@ -41,7 +42,7 @@ async def register_user(body: UserCreateForm,
                             detail=f"Database error: User already exists.")
 
 
-@login_router.post("/token", response_model=Token)
+@login_router.post("/", response_model=Token)
 async def login_for_access_token(
         form_data: OAuth2PasswordRequestForm = Depends(),
         db: AsyncSession = Depends(get_db)) -> Token:
@@ -51,7 +52,13 @@ async def login_for_access_token(
     if not token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail="Incorrect username or password")
-    return Token(access_token=token)
+    return token
+
+
+@login_router.post('/refresh', response_model=Token)
+async def refresh_token(
+        current_user: User = Depends(get_current_user_from_token)) -> Token:
+    return await _refresh_token(current_user)
 
 
 @user_router.post('/add', response_model=AddWordResponse)
@@ -77,18 +84,23 @@ async def update_word(
         db: AsyncSession = Depends(get_db),
         current_user: User = Depends(get_current_user_from_token)
 ) -> Word:
-    updated_word_params = body.dict()
-    return await update_word_from_vocabulary(updated_word_params, db,
-                                             current_user)
+    updated_word_params = body.dict(exclude_none=True)
+    return await update_word_from_vocabulary(
+        body=updated_word_params, session=db, user=current_user)
 
 
 @user_router.websocket('/ws')
-async def ws_word_repetition_service(
+async def ws_repetition_service(
         websocket: WebSocket,
+        token: str = Query(...),
         db: AsyncSession = Depends(get_db),
-        current_user: User = Depends(get_current_user_from_token),
         manager: ConnectionManager = Depends(get_manager)
 ) -> None:
-    await manager.connect(websocket)
-    await _ws_word_repetition_service(websocket, db, current_user, manager)
-    manager.disconnect(websocket)
+    try:
+        if token:
+            current_user = await get_current_user_from_token(token, db)
+            await manager.connect(websocket)
+            await _ws_repetition_service(websocket, db, current_user,
+                                         manager)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
