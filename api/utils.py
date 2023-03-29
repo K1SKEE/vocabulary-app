@@ -26,6 +26,12 @@ class Hasher:
 
 
 class JWT:
+    @classmethod
+    def create_token_for_access(cls, user: User) -> tuple:
+        access_token = cls.create_access_token(user)
+        refresh_token = cls.create_refresh_token(user)
+        return access_token, refresh_token
+
     @staticmethod
     def create_access_token(user: User):
         access_token_expires = timedelta(
@@ -35,6 +41,16 @@ class JWT:
             expires_delta=access_token_expires,
         )
         return access_token
+
+    @staticmethod
+    def create_refresh_token(user: User):
+        refresh_token_expires = timedelta(
+            days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        refresh_token = JWT._create_jwt_token(
+            data={"sub": user.username, "type": "refresh"},
+            expires_delta=refresh_token_expires,
+        )
+        return refresh_token
 
     @staticmethod
     def _create_jwt_token(data: dict,

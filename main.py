@@ -18,7 +18,8 @@ app.add_middleware(
 main_api_router = APIRouter(prefix="/api/v1")
 
 main_api_router.include_router(user_router, prefix='/user', tags=["user"])
-main_api_router.include_router(login_router, prefix="/login", tags=["login"])
+main_api_router.include_router(login_router, prefix="/token", tags=["token"])
+
 app.include_router(main_api_router)
 
 if __name__ == '__main__':

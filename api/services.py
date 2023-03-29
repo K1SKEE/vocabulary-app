@@ -3,7 +3,7 @@ import random
 
 from fastapi import HTTPException, Depends, WebSocket
 from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError
+from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 from websockets.exceptions import ConnectionClosedError
@@ -16,7 +16,7 @@ from db.models import User
 from api.utils import Hasher, JWT, ConnectionManager
 from db.session import get_db
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
 
 async def _create_new_user(body: UserCreateForm,
@@ -52,8 +52,13 @@ async def _authenticate_user(username: str,
         return
     if not Hasher.check_password(password, user.hashed_password, user.salt):
         return
-    token = JWT.create_access_token(user=user)
-    return token
+    token, refresh_token = JWT.create_token_for_access(user=user)
+    return Token(access_token=token, refresh_token=refresh_token)
+
+
+async def _refresh_token(user: User) -> Token:
+    token, refresh_token = JWT.create_token_for_access(user=user)
+    return Token(access_token=token, refresh_token=refresh_token)
 
 
 async def get_current_user_from_token(
