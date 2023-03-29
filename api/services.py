@@ -3,9 +3,10 @@ import random
 
 from fastapi import HTTPException, Depends, WebSocket
 from fastapi.security import OAuth2PasswordBearer
-from jose import jwt, JWTError
+from jose import JWTError, jwt
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
+from websockets.exceptions import ConnectionClosedError
 
 import settings
 from api.schemas import (UserCreateForm, UserCreateResponse, Token,
@@ -15,7 +16,7 @@ from db.models import User
 from api.utils import Hasher, JWT, ConnectionManager
 from db.session import get_db
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login/token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
 
 async def _create_new_user(body: UserCreateForm,
@@ -51,8 +52,13 @@ async def _authenticate_user(username: str,
         return
     if not Hasher.check_password(password, user.hashed_password, user.salt):
         return
-    token = JWT.create_access_token(user=user)
-    return token
+    token, refresh_token = JWT.create_token_for_access(user=user)
+    return Token(access_token=token, refresh_token=refresh_token)
+
+
+async def _refresh_token(user: User) -> Token:
+    token, refresh_token = JWT.create_token_for_access(user=user)
+    return Token(access_token=token, refresh_token=refresh_token)
 
 
 async def get_current_user_from_token(
@@ -129,25 +135,32 @@ def _get_word_generator(vocabulary: list) -> Generator:
         yield word
 
 
-def check_answer(answer: str, word: Word):
-    if answer == word.ukr:
+def check_answer(answer: str, word: str) -> bool | None:
+    if answer == word:
         return True
-    if answer in word.ukr:
+    word_list = word.split(', ')
+    if answer in word_list:
         return True
 
 
-async def _ws_word_repetition_service(
-        websocket: WebSocket,
-        session: AsyncSession,
-        user: User,
-        manager: ConnectionManager) -> None:
+async def _ws_repetition_service(websocket: WebSocket,
+                                 session: AsyncSession,
+                                 user: User,
+                                 manager: ConnectionManager) -> None:
     async with session.begin():
         user_manager = UserManager(session)
-        vocabulary = await user_manager.get_user_vocabulary(user.username)
+        vocabulary = await user_manager.get_user_vocabulary_for_repetition(
+            user.username
+        )
     for word in _get_word_generator(vocabulary):
-        await manager.send_personal_message(word.eng, websocket)
-        answer = await websocket.receive_text()
-        if check_answer(answer, Word(**word)):
-            await manager.send_personal_message("Right answer!", websocket)
-        else:
-            await manager.send_personal_message("Wrong answer!", websocket)
+        try:
+            await manager.send_personal_message({"eng": word.eng}, websocket)
+            answer = await websocket.receive_text()
+            if check_answer(answer, word.ukr):
+                await manager.send_personal_message(
+                    {"result": "Right answer!"}, websocket)
+            else:
+                await manager.send_personal_message(
+                    {"result": "Wrong answer!"}, websocket)
+        except ConnectionClosedError:
+            pass
