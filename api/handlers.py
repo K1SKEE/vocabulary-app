@@ -100,7 +100,7 @@ async def ws_repetition_service(
         if token:
             current_user = await get_current_user_from_token(token, db)
             await manager.connect(websocket)
-            await _ws_repetition_service(websocket, db, current_user,
-                                         manager)
+            await _ws_word_repetition_service(websocket, db, current_user,
+                                              manager)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
