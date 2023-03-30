@@ -129,15 +129,6 @@ async def update_word_from_vocabulary(
         )
 
 
-async def _delete_word(word_id: int, session: AsyncSession, user: User) -> None:
-    async with session.begin():
-        dictionary_manager = DictionaryManager(session)
-        await dictionary_manager.delete_word_from_vocabulary(
-            word_id=word_id,
-            user_id=user.user_id,
-        )
-
-
 def _get_word_generator(vocabulary: list) -> Generator:
     random.shuffle(vocabulary)
     for word in vocabulary:

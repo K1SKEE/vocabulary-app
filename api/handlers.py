@@ -14,7 +14,7 @@ from api.schemas import (
 from api.services import (
     _create_new_user, _authenticate_user, get_current_user_from_token,
     _add_new_word, _get_vocabulary, _ws_repetition_service,
-    update_word_from_vocabulary, _refresh_token, _delete_word
+    update_word_from_vocabulary, _refresh_token
 )
 from api.utils import ConnectionManager, get_manager
 from db.models import User
@@ -89,15 +89,6 @@ async def update_word(
         body=updated_word_params, session=db, user=current_user)
 
 
-@user_router.delete('/vocabulary/{word_id}', response_model=None)
-async def delete_word(
-        word_id: int,
-        db: AsyncSession = Depends(get_db),
-        current_user: User = Depends(get_current_user_from_token)
-) -> None:
-    return await _delete_word(word_id=word_id, session=db, user=current_user)
-
-
 @user_router.websocket('/ws')
 async def ws_repetition_service(
         websocket: WebSocket,
@@ -109,7 +100,7 @@ async def ws_repetition_service(
         if token:
             current_user = await get_current_user_from_token(token, db)
             await manager.connect(websocket)
-            await _ws_repetition_service(websocket, db, current_user,
+            await _ws_word_repetition_service(websocket, db, current_user,
                                               manager)
     except WebSocketDisconnect:
         manager.disconnect(websocket)
