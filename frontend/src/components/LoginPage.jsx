@@ -20,6 +20,8 @@ const LoginPage = () => {
             formData.append('password', password);
             const tokenData = await vocabularyService.login(formData);
             localStorage.setItem('access_token', tokenData.access_token);
+            localStorage.setItem('refresh_token', tokenData.refresh_token);
+            localStorage.setItem('token_type', tokenData.token_type);
             navigate('/add');
             window.location.reload();
         } catch (error) {
