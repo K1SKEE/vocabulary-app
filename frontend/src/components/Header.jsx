@@ -13,6 +13,8 @@ const Header = (props) => {
 
     const handleLogout = () => {
         localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('token_type');
         navigate('/login');
         window.location.reload();
     }
@@ -30,7 +32,6 @@ const Header = (props) => {
                                 <NavLink className='nav-link' to="/repetition">Повторення слів</NavLink>
                                 <Nav.Link className='nav-link' onClick={handleLogout}>Вихід</Nav.Link>
                             </Nav>
-
                         </> :
                         <>
                             <Navbar.Brand href="/login">Vocabulary-App</Navbar.Brand>
