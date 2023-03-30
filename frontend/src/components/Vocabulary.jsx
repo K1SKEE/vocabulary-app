@@ -15,7 +15,7 @@ const Vocabulary = (props) => {
         { field: 'flag', fieldName: 'Apply in repetition' },
     ];
 
-    const [vocabulary, setVocabulary] = useState([])
+    const [vocabulary, setVocabulary] = useState([]);
     const [isEditMode, setIsEditMode] = useState(false);
     const [rowIDToEdit, setRowIDToEdit] = useState({});
     const [editedRow, setEditedRow] = useState();
@@ -34,7 +34,8 @@ const Vocabulary = (props) => {
         setRowIDToEdit(rowID);
     }
 
-    const handleRemoveRow = (rowID) => {
+    const handleRemoveRow = async (rowID) => {
+        await vocabularyService.deleteVocabularyItem(rowID)
         const newData = vocabulary.filter(row => {
             return row.id !== rowID ? row : null
         });
@@ -48,12 +49,11 @@ const Vocabulary = (props) => {
 
     const handleSaveRowChanges = async () => {
         setIsEditMode(false);
-        await vocabularyService.updateVocabulary(editedRow);
+        const result = await vocabularyService.updateVocabulary(editedRow);
         const newData = vocabulary.map(row => {
             if (row.id === editedRow.id) {
-                row = editedRow;
+                row = result;
             }
-
             return row;
         })
 
