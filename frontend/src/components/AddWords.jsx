@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Form from 'react-bootstrap/Form';
 import InputGroup from 'react-bootstrap/InputGroup';
 import VocabularyAppService from '../VocabularyAppService';
@@ -13,6 +13,7 @@ const AddWords = (props) => {
     const [ukr, setUkr] = useState('')
     const [result, setResult] = useState(null);
     const [error, setError] = useState('');
+    const formRef = useRef();
 
 
     const handleSubmit = async (event) => {
@@ -20,6 +21,8 @@ const AddWords = (props) => {
         try {
             const result = await vocabularyService.addWord({ "eng": eng, "ukr": ukr });
             setResult(result)
+            setError('')
+            formRef.current.reset();
         } catch (error) {
             if (error.response && error.response.data) {
                 setError(error.response.data.detail);
@@ -29,7 +32,7 @@ const AddWords = (props) => {
 
     return (
         <div className="Form-container">
-            <form className="Form">
+            <form className="Form" ref={formRef} onSubmit={handleSubmit}>
                 <div className="Auth-form-content">
                     <h3 className="Auth-form-title">Додати до словникового запасу</h3>
                     <div className="form-group mt-3">
@@ -54,7 +57,7 @@ const AddWords = (props) => {
                         </div>
                     )}
                     <div className="d-grid gap-2 mt-3">
-                        <button type="button" className="btn btn-primary" onClick={handleSubmit}>
+                        <button type="submit" className="btn btn-primary" onClick={handleSubmit}>
                             Submit
                         </button>
                     </div>
