@@ -170,6 +170,6 @@ async def _ws_repetition_service(websocket: WebSocket,
                     {"result": "Right answer!"}, websocket)
             else:
                 await manager.send_personal_message(
-                    {"result": "Wrong answer!"}, websocket)
+                    {"result": f"Wrong answer! \n({word.ukr})"}, websocket)
         except ConnectionClosedError:
             pass
