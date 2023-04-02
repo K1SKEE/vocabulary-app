@@ -56,6 +56,9 @@ const AddWords = (props) => {
                             {error}
                         </div>
                     )}
+                    {result && (
+                        <div className="alert alert-success" role="alert"><h6>{result.eng} - {result.ukr} ДОДАНО</h6></div>
+                    )}
                     <div className="d-grid gap-2 mt-3">
                         <button type="submit" className="btn btn-primary" onClick={handleSubmit}>
                             Submit
@@ -63,13 +66,6 @@ const AddWords = (props) => {
                     </div>
                 </div>
                 <br></br>
-                {
-                    result && (
-                        <div className="alert alert-danger" role="alert" style={{ backgroundColor: 'blue', color: 'white' }}>
-                            <h3 class="Auth-form-title">{result.eng} - {result.ukr} додано</h3>
-                        </div>
-                    )
-                }
             </form >
         </div >
     )
