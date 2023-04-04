@@ -20,7 +20,7 @@ class VocabularyAppService {
     }
 
     async register(user) {
-        const url = `${API_URL}/user/register`;
+        const url = `${API_URL}/register`;
         const response = await axios.post(url, user);
         return response.data;
     }

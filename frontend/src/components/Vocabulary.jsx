@@ -10,9 +10,9 @@ const vocabularyService = new VocabularyAppService()
 const Vocabulary = (props) => {
     const columns = [
         { field: 'id', fieldName: '#' },
+        { field: 'flag', fieldName: 'Apply in repetition' },
         { field: 'eng', fieldName: 'Eng' },
         { field: 'ukr', fieldName: 'Ukr' },
-        { field: 'flag', fieldName: 'Apply in repetition' },
     ];
 
     const [vocabulary, setVocabulary] = useState([]);
@@ -92,6 +92,21 @@ const Vocabulary = (props) => {
                             <td>
                                 {row.id}
                             </td>
+                            <td style={{ width: '50px' }}>
+                                {isEditMode && rowIDToEdit === row.id
+                                    ? <Form.Check
+                                        type="checkbox"
+                                        defaultChecked={row.flag}
+                                        disabled
+                                    />
+                                    :
+                                    <Form.Check
+                                        type="checkbox"
+                                        defaultChecked={row.flag}
+                                        onChange={() => handleUpdateFlag(!row.flag, row.id)}
+                                    />
+                                }
+                            </td>
                             <td>
                                 {isEditMode && rowIDToEdit === row.id
                                     ? <Form.Control
@@ -114,21 +129,6 @@ const Vocabulary = (props) => {
                                         onChange={(e) => handleOnChangeField(e, row.id)}
                                     />
                                     : row.ukr
-                                }
-                            </td>
-                            <td>
-                                {isEditMode && rowIDToEdit === row.id
-                                    ? <Form.Check
-                                        type="checkbox"
-                                        defaultChecked={row.flag}
-                                        disabled
-                                    />
-                                    :
-                                    <Form.Check
-                                        type="checkbox"
-                                        defaultChecked={row.flag}
-                                        onChange={() => handleUpdateFlag(!row.flag, row.id)}
-                                    />
                                 }
                             </td>
                             <td>
