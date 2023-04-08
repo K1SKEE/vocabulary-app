@@ -56,7 +56,7 @@ class AddWordResponse(BaseModel):
     ukr: str
 
 
-class Word(BaseModel):
+class Word(Model):
     id: int
     eng: Optional[str]
     ukr: Optional[str]
@@ -79,5 +79,13 @@ class Word(BaseModel):
         return value
 
 
-class Vocabulary(BaseModel):
+class PaginationMeta(BaseModel):
+    page: int
+    per_page: int
+    total_pages: int
+    total_rows: int
+
+
+class Vocabulary(Model):
     vocabulary: List[Word]
+    meta: PaginationMeta
