@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Form, Table } from "react-bootstrap";
 import { PencilFill, Save, Trash, XSquare } from 'react-bootstrap-icons';
+import Pagination from 'react-bootstrap/Pagination';
 
 import VocabularyAppService from '../VocabularyAppService';
 
@@ -8,25 +10,33 @@ import VocabularyAppService from '../VocabularyAppService';
 const vocabularyService = new VocabularyAppService()
 
 const Vocabulary = (props) => {
+
+    const [vocabulary, setVocabulary] = useState([]);
+    const [paginationMeta, setPaginationMeta] = useState({});
+    const [isEditMode, setIsEditMode] = useState(false);
+    const [rowIDToEdit, setRowIDToEdit] = useState({});
+    const [editedRow, setEditedRow] = useState();
+    const navigate = useNavigate();
+    const location = useLocation();
+
     const columns = [
         { field: 'id', fieldName: '#' },
         { field: 'flag', fieldName: 'Apply in repetition' },
         { field: 'eng', fieldName: 'Eng' },
         { field: 'ukr', fieldName: 'Ukr' },
+        { field: 'totalCount', fieldName: `Count: ${paginationMeta.total_rows}` },
     ];
 
-    const [vocabulary, setVocabulary] = useState([]);
-    const [isEditMode, setIsEditMode] = useState(false);
-    const [rowIDToEdit, setRowIDToEdit] = useState({});
-    const [editedRow, setEditedRow] = useState();
-
     useEffect(() => {
+        const pageParam = new URLSearchParams(location.search).get('page');
+        const page = pageParam ? parseInt(pageParam) : 1;
         const fetchVocabulary = async () => {
-            const vocabulary = await vocabularyService.getVocabulary();
+            const vocabulary = await vocabularyService.getVocabulary(page);
             setVocabulary(vocabulary.vocabulary);
+            setPaginationMeta(vocabulary.meta);
         };
         fetchVocabulary();
-    }, []);
+    }, [location]);
 
     const handleEdit = (rowID) => {
         setIsEditMode(true);
@@ -56,7 +66,6 @@ const Vocabulary = (props) => {
             }
             return row;
         })
-
         setVocabulary(newData);
         setEditedRow(undefined)
     }
@@ -75,6 +84,18 @@ const Vocabulary = (props) => {
         })
         console.log(editedRow)
     }
+
+    const handlePageClick = async (pageNumber) => {
+        if (pageNumber === 0) {
+            pageNumber++;
+        } else if (pageNumber > paginationMeta.total_pages) {
+            pageNumber--;
+        }
+        navigate(`?page=${pageNumber}`);
+        const vocabulary = await vocabularyService.getVocabulary(pageNumber);
+        setVocabulary(vocabulary.vocabulary);
+        setPaginationMeta(vocabulary.meta);
+    };
 
     return (
         <>
@@ -154,6 +175,19 @@ const Vocabulary = (props) => {
                     })}
                 </tbody>
             </Table>
+            <div className='pagination'>
+                <Pagination>
+                    <Pagination.First onClick={() => handlePageClick(1)} />
+                    <Pagination.Prev onClick={() => handlePageClick(paginationMeta.page - 1)} />
+                    {Array.from({ length: paginationMeta.total_pages }, (_, i) => (
+                        <Pagination.Item key={i + 1} active={i + 1 === paginationMeta.page} onClick={() => handlePageClick(i + 1)}>
+                            {i + 1}
+                        </Pagination.Item>
+                    ))}
+                    <Pagination.Next onClick={() => handlePageClick(paginationMeta.page + 1)} />
+                    <Pagination.Last onClick={() => handlePageClick(paginationMeta.total_pages)} />
+                </Pagination>
+            </div>
         </>
     )
 }
