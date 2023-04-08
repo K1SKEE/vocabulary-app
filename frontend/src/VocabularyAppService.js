@@ -69,8 +69,8 @@ class VocabularyAppService {
         }
     }
 
-    async getVocabulary() {
-        const url = `${API_URL}/user/vocabulary`;
+    async getVocabulary(page=1) {
+        const url = `${API_URL}/user/vocabulary?page=${page}`;
         const config = {
             headers: { Authorization: `${this.tokenType} ${this.accessToken}` }
         };
