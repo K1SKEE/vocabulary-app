@@ -1,11 +1,13 @@
 from typing import Generator
 import random
 
-from fastapi import WebSocket
+from fastapi import WebSocket, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from websockets.exceptions import ConnectionClosedError
 
-from api.schemas import AddWordResponse, AddWordForm, Vocabulary, Word
+from api.schemas import (
+    AddWordResponse, AddWordForm, Vocabulary, Word, PaginationMeta
+)
 from db.managers import UserManager, DictionaryManager
 from db.models import User
 from api.utils import ConnectionManager
@@ -23,17 +25,24 @@ async def add_new_word(
 
 
 async def get_vocabulary_service(user: User,
-                                 session: AsyncSession) -> Vocabulary:
+                                 session: AsyncSession,
+                                 page: int,
+                                 per_page: int = 100) -> Vocabulary:
     async with session.begin():
         user_manager = UserManager(session)
-        result = await user_manager.get_user_vocabulary(user.username)
-        vocabulary = [{
-            'eng': row.eng,
-            'ukr': row.ukr,
-            'flag': row.flag,
-            'id': row.id
-        } for row in result]
-        return Vocabulary(vocabulary=vocabulary)
+        count = await user_manager.get_count_vocabulary(user.username)
+        total_pages = (count - 1) // 100 + 1
+        if page > total_pages:
+            raise HTTPException(
+                status_code=422,
+                detail='Unprocessable Entity'
+            )
+        offset = (page - 1) * per_page
+        result = await user_manager.get_user_vocabulary(
+            username=user.username, limit=per_page, offset=offset)
+        meta = PaginationMeta(page=page, per_page=len(result),
+                              total_pages=total_pages, total_rows=count)
+        return Vocabulary(meta=meta, vocabulary=result)
 
 
 async def update_word_from_vocabulary(
@@ -49,11 +58,7 @@ async def update_word_from_vocabulary(
             **body
         )
         return Word(
-            id=result.id,
-            eng=result.eng,
-            ukr=result.ukr,
-            flag=result.flag,
-            user_id=result.user_id
+            id=result.id, eng=result.eng, ukr=result.ukr, flag=result.flag
         )
 
 
@@ -79,6 +84,10 @@ def check_answer(answer: str, word: str) -> bool | None:
     word_list = word.split(', ')
     if answer in word_list:
         return True
+    if ',' in answer:
+        for answer_word in answer.split(", "):
+            if answer_word in word_list:
+                return True
 
 
 async def ws_repetition_service(websocket: WebSocket,
