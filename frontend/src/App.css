@@ -94,3 +94,8 @@ label {
     font-weight: 600;
     color: rgb(221, 15, 15);
 }
+
+.pagination {
+    margin-left: auto;
+    margin-right: auto;
+}
