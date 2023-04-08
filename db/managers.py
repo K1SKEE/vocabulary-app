@@ -1,6 +1,6 @@
 from typing import List
 
-from sqlalchemy import select, update, and_, delete
+from sqlalchemy import select, update, and_, delete, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import User, Dictionary
@@ -32,14 +32,28 @@ class UserManager:
         if user_data is not None:
             return user_data[0]
 
-    async def get_user_vocabulary(self, username: str) -> List[Dictionary]:
+    async def get_user_vocabulary(self, username: str,
+                                  limit: int = 100,
+                                  offset: int = 0) -> List[Dictionary]:
         query = (
             select(Dictionary)
             .join(User)
             .where(User.username == username)
+            .limit(limit)
+            .offset(offset)
+            .order_by(Dictionary.id.asc())
         )
         result = await self.db_session.execute(query)
         return [row[0] for row in result.fetchall()]
+
+    async def get_count_vocabulary(self, username: str) -> int:
+        query = (
+            select(func.count(Dictionary.id))
+            .join(User)
+            .where(User.username == username)
+        )
+        result = await self.db_session.execute(query)
+        return result.scalar()
 
     async def get_user_vocabulary_for_repetition(
             self, username: str) -> List[Dictionary]:
