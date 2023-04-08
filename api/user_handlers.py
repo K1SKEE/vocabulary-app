@@ -26,10 +26,12 @@ async def add_new_word_to_vocabulary(
 
 @user_router.get('/vocabulary', response_model=Vocabulary)
 async def get_vocabulary(
+        page: int = Query(1, ge=1),
         db: AsyncSession = Depends(get_db),
         current_user: User = Depends(get_current_user_from_token)
 ) -> Vocabulary:
-    return await get_vocabulary_service(user=current_user, session=db)
+    return await get_vocabulary_service(user=current_user, session=db,
+                                        page=page)
 
 
 @user_router.patch('/vocabulary', response_model=Word)
