@@ -88,4 +88,4 @@ class PaginationMeta(BaseModel):
 
 class Vocabulary(Model):
     vocabulary: List[Word]
-    meta: PaginationMeta
+    meta: PaginationMeta | None
