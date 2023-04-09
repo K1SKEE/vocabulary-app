@@ -2,11 +2,13 @@ from fastapi import APIRouter, Depends, WebSocket, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.websockets import WebSocketDisconnect
 
-from api.schemas import AddWordResponse, AddWordForm, Vocabulary, Word
+from api.schemas import (
+    AddWordResponse, AddWordForm, Vocabulary, Word, SearchWordResponse
+)
 from api.services.auth_services import get_current_user_from_token
 from api.services.user_services import (
     add_new_word, get_vocabulary_service, update_word_from_vocabulary,
-    delete_word_service, ws_repetition_service,
+    delete_word_service, ws_repetition_service, search_word_service,
 )
 from api.utils import ConnectionManager, get_manager
 from db.models import User
@@ -53,6 +55,15 @@ async def delete_word(
 ) -> None:
     return await delete_word_service(word_id=word_id, session=db,
                                      user=current_user)
+
+
+@user_router.get('/vocabulary/{word}', response_model=SearchWordResponse)
+async def search_word(
+        word: str,
+        db: AsyncSession = Depends(get_db),
+        current_user: User = Depends(get_current_user_from_token)
+) -> SearchWordResponse:
+    return await search_word_service(word, db, current_user)
 
 
 @user_router.websocket('/ws')
