@@ -69,7 +69,7 @@ class VocabularyAppService {
         }
     }
 
-    async getVocabulary(page=1) {
+    async getVocabulary(page = 1) {
         const url = `${API_URL}/user/vocabulary?page=${page}`;
         const config = {
             headers: { Authorization: `${this.tokenType} ${this.accessToken}` }
@@ -117,6 +117,24 @@ class VocabularyAppService {
             if (error.response.status === 401) {
                 await this.handleTokenRefreshError()
                 return this.deleteVocabularyItem(id);
+            } else {
+                throw error;
+            }
+        }
+    }
+
+    async searchWord(word) {
+        const url = `${API_URL}/user/vocabulary/${word}`;
+        const config = {
+            headers: { Authorization: `${this.tokenType} ${this.accessToken}` }
+        };
+        try {
+            const response = await axios.get(url, config);
+            return response.data
+        } catch (error) {
+            if (error.response.status === 401) {
+                await this.handleTokenRefreshError()
+                return this.searchWord(word);
             } else {
                 throw error;
             }
