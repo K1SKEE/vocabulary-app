@@ -28,14 +28,23 @@ const Vocabulary = (props) => {
     ];
 
     useEffect(() => {
-        const pageParam = new URLSearchParams(location.search).get('page');
-        const page = pageParam ? parseInt(pageParam) : 1;
-        const fetchVocabulary = async () => {
-            const vocabulary = await vocabularyService.getVocabulary(page);
-            setVocabulary(vocabulary.vocabulary);
-            setPaginationMeta(vocabulary.meta);
-        };
-        fetchVocabulary();
+        const searchParam = new URLSearchParams(location.search).get('search');
+        if (searchParam) {
+            const fetchSearch = async () => {
+                const result = await vocabularyService.searchWord(searchParam);
+                setVocabulary(result.result);
+            }
+            fetchSearch();
+        } else {
+            const pageParam = new URLSearchParams(location.search).get('page');
+            const page = pageParam ? parseInt(pageParam) : 1;
+            const fetchVocabulary = async () => {
+                const vocabulary = await vocabularyService.getVocabulary(page);
+                setVocabulary(vocabulary.vocabulary);
+                setPaginationMeta(vocabulary.meta);
+            };
+            fetchVocabulary();
+        }
     }, [location]);
 
     const handleEdit = (rowID) => {
