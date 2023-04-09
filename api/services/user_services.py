@@ -6,7 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from websockets.exceptions import ConnectionClosedError
 
 from api.schemas import (
-    AddWordResponse, AddWordForm, Vocabulary, Word, PaginationMeta
+    AddWordResponse, AddWordForm, Vocabulary, Word, PaginationMeta,
+    SearchWordResponse
 )
 from db.managers import UserManager, DictionaryManager
 from db.models import User
@@ -70,6 +71,20 @@ async def delete_word_service(word_id: int,
             word_id=word_id,
             user_id=user.user_id
         )
+
+
+async def search_word_service(word: str,
+                              session: AsyncSession,
+                              user: User) -> SearchWordResponse:
+    async with session.begin():
+        dictionary_manager = DictionaryManager(session)
+        result = await dictionary_manager.get_matching_dictionary_words(
+            word=word,
+            user_id=user.user_id,
+        )
+        if not result:
+            raise HTTPException(status_code=404)
+        return SearchWordResponse(result=result)
 
 
 def _get_word_generator(vocabulary: list) -> Generator:
