@@ -1,6 +1,6 @@
 from typing import List
 
-from sqlalchemy import select, update, and_, delete, func
+from sqlalchemy import select, update, and_, delete, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db.models import User, Dictionary
@@ -71,6 +71,19 @@ class DictionaryManager:
 
     def __init__(self, db_session: AsyncSession):
         self.db_session = db_session
+
+    async def get_matching_dictionary_words(self, user_id: int,
+                                            word: str) -> List[Dictionary]:
+        query = (
+            select(Dictionary)
+            .where(Dictionary.user_id == user_id)
+            .where(or_(
+                Dictionary.eng.like(f'%{word}%'),
+                Dictionary.ukr.like(f'%{word}%')
+            ))
+        )
+        result = await self.db_session.execute(query)
+        return [row[0] for row in result.fetchall()]
 
     async def add_to_vocabulary(self, eng: str, ukr: str,
                                 user: User) -> Dictionary:
