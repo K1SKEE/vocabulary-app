@@ -31,13 +31,13 @@ services:
       - "8000:8000"
     networks:
       - custom
-  frontend:
+  nginx:
     build:
       context: ./frontend
       dockerfile: Dockerfile
     restart: always
     ports:
-      - "3000:3000"
+      - "80:80"
     depends_on:
       - backend
     networks:
