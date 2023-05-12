@@ -4,10 +4,22 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-REAL_DATABASE_URL = os.getenv(
+REAL_DATABASE_URL: str = os.getenv(
     'DATABASE_URL',
     default='postgresql+asyncpg://postgres:postgres@db:5432/postgres'
 )
+
+REDIS_URL: str = os.getenv(
+    'REDIS_URL',
+    default='redis://:password@localhost:6379'
+)
+
+EMAIL_CONFIG: dict = {
+    'EMAIL_LOGIN': os.getenv('EMAIL_LOGIN', default='example@gmail.com'),
+    'EMAIL_PASSWORD': os.getenv('EMAIL_PASSWORD', default='password-example'),
+    'SMTP_SERVER': os.getenv('SMTP_SERVER', default='smtp.gmail.com'),
+    'SMTP_PORT': int(os.getenv('SMTP_PORT', default=587))
+}
 
 SECRET_KEY: str = os.getenv('SECRET_KEY', default='secret_key')
 
