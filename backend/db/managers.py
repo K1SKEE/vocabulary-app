@@ -11,9 +11,10 @@ class UserManager:
     def __init__(self, db_session: AsyncSession):
         self.db_session = db_session
 
-    async def create_user(self, username: str, hashed_password: str,
-                          salt: bytes) -> User:
+    async def create_user(self, email: str, username: str,
+                          hashed_password: str, salt: bytes) -> User:
         new_user = User(
+            email=email,
             username=username,
             hashed_password=hashed_password,
             salt=salt
@@ -25,7 +26,8 @@ class UserManager:
     async def get_user(self, username: str) -> User | None:
         query = (
             select(User)
-            .where(User.username == username)
+            .where(or_(User.username == username,
+                       User.email == username))
         )
         result = await self.db_session.execute(query)
         user_data = result.fetchone()
@@ -65,6 +67,19 @@ class UserManager:
         )
         result = await self.db_session.execute(query)
         return [row[0] for row in result.fetchall()]
+
+    async def set_user_is_active(self, username: str) -> User:
+        query = (
+            update(User)
+            .where(or_(User.username == username,
+                       User.email == username))
+            .values(is_active=True)
+            .returning(User)
+        )
+        result = await self.db_session.execute(query)
+        row = result.fetchone()
+        if row is not None:
+            return row[0]
 
 
 class DictionaryManager:
