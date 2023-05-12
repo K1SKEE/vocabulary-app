@@ -9,10 +9,11 @@ class User(Base):
     __tablename__ = "users"
 
     user_id = Column(Integer, primary_key=True)
+    email = Column(String, nullable=False, unique=True)
     username = Column(String, nullable=False, unique=True)
     hashed_password = Column(String, nullable=False)
     salt = Column(LargeBinary, nullable=False)
-    is_active = Column(Boolean(), default=True)
+    is_active = Column(Boolean(), default=False)
 
     vocabulary = relationship('Dictionary', backref='user')
 
