@@ -11,7 +11,7 @@ REAL_DATABASE_URL: str = os.getenv(
 
 REDIS_URL: str = os.getenv(
     'REDIS_URL',
-    default='redis://:password@localhost:6379'
+    default='redis://:@localhost:6379'
 )
 
 EMAIL_CONFIG: dict = {
