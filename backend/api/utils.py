@@ -2,9 +2,13 @@ import hashlib
 import os
 from datetime import timedelta, datetime
 from typing import Generator
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 from jose import jwt
 from fastapi import WebSocket
+from pydantic import EmailStr
 
 import settings
 from db.models import User
@@ -91,3 +95,43 @@ class ConnectionManager:
 async def get_manager() -> Generator:
     manager = ConnectionManager()
     yield manager
+
+
+class EmailClientManager:
+    def __init__(self):
+        self.config = settings.EMAIL_CONFIG
+        self.from_email = settings.EMAIL_CONFIG.get('EMAIL_LOGIN')
+        self.server = None
+
+    async def connect(self) -> None:
+        self.server = smtplib.SMTP(
+            self.config.get('SMTP_SERVER'),
+            self.config.get('SMTP_PORT')
+        )
+        self.server.starttls()
+        self.server.login(
+            self.config.get('EMAIL_LOGIN'),
+            self.config.get('EMAIL_PASSWORD')
+        )
+
+    async def send_email(self, to_email: EmailStr) -> str:
+        if not self.server:
+            await self.connect()
+        text, token = await self.make_message(to_email)
+        self.server.sendmail(self.from_email, to_email, text)
+        self.server.quit()
+        return token
+
+    async def make_message(self, to_email: EmailStr) -> tuple:
+        msg = MIMEMultipart()
+        msg['From'], msg['To'] = self.from_email, to_email
+        msg['Subject'] = "Activate your account"
+        token = ConfirmationToken.generate_confirmation_token(to_email)
+        body = f"""
+                <a href="http://localhost/activate?token={token}">
+                    Activate account
+                </a>
+                """
+        msg.attach(MIMEText(body, 'html'))
+        text = msg.as_string()
+        return text, token
