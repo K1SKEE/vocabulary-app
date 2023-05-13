@@ -7,8 +7,8 @@ from starlette import status
 
 import settings
 from api.redis_connectors import RedisConnectors
-from api.schemas import Token, UserCreateForm, UserCreateResponse
-from api.utils import Hasher, JWT, EmailClientManager
+from api.schemas import Token, UserCreateForm
+from api.utils import Hasher, JWT, EmailClientManager, ConfirmationToken
 from db.managers import UserManager
 from db.models import User
 from db.session import get_db
@@ -17,7 +17,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/token")
 
 
 async def create_new_user(body: UserCreateForm,
-                          session: AsyncSession) -> UserCreateResponse | None:
+                          session: AsyncSession) -> str | None:
     if body.password_1 != body.password_2:
         return
     hashed_password, salt = Hasher.hash_password(body.password_1)
@@ -29,15 +29,32 @@ async def create_new_user(body: UserCreateForm,
             hashed_password=hashed_password,
             salt=salt
         )
-        return UserCreateResponse(email=body.email)
+    return body.email
 
 
 async def send_confirmation_token_to_email(
         to_email: EmailStr, email_manager: EmailClientManager,
-        redis: RedisConnectors):
+        redis: RedisConnectors) -> None:
     token = await email_manager.send_email(to_email)
     token = token.split('.')
     redis.email_manager_conn.set(to_email, token[0])
+
+
+async def confirm_registration_service(
+        token: str, redis: RedisConnectors,
+        session: AsyncSession) -> Token | None:
+    email, token = ConfirmationToken.decrypt_confirmation_token(token)
+    token_from_redis = redis.email_manager_conn.get(email)
+    if not token_from_redis or token_from_redis.decode('utf-8') != token:
+        raise HTTPException(status_code=400, detail='Bad token')
+    async with session.begin():
+        user_manager = UserManager(session)
+        user = await user_manager.set_user_is_active(email)
+    if user is None:
+        return
+    redis.email_manager_conn.delete(email)
+    _token, _refresh_token = JWT.create_token_for_access(user=user)
+    return Token(access_token=_token, refresh_token=_refresh_token)
 
 
 async def _get_user_for_auth(
