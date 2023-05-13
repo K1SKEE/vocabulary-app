@@ -22,12 +22,12 @@ async def create_new_user(body: UserCreateForm,
     async with session.begin():
         user_manager = UserManager(session)
         await user_manager.create_user(
+            email=body.email,
             username=body.username,
             hashed_password=hashed_password,
             salt=salt
         )
-        return UserCreateResponse(username=body.username,
-                                  password=body.password_1)
+        return UserCreateResponse(email=body.email)
 
 
 async def _get_user_for_auth(
@@ -75,4 +75,9 @@ async def get_current_user_from_token(
     user = await _get_user_for_auth(username=username, session=db)
     if user is None:
         raise credentials_exception
+    if user.is_active is False:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account isn't activated",
+        )
     return user
