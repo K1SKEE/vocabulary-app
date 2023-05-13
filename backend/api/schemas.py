@@ -2,7 +2,7 @@ import re
 from typing import List, Optional
 
 from fastapi import HTTPException
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, validator, EmailStr
 
 ENG_LETTER_MATCH_PATTERN = re.compile(r"^[a-zA-Z\-\(\)\s]+$")
 UKR_LETTER_MATCH_PATTERN = re.compile(r"^[а-щьюяєіїґА-ЩЬЮЯЄІЇҐ'\-\(\)\s,]+$")
@@ -14,14 +14,14 @@ class Model(BaseModel):
 
 
 class UserCreateForm(BaseModel):
+    email: EmailStr
     username: str
     password_1: str
     password_2: str
 
 
 class UserCreateResponse(BaseModel):
-    username: str
-    password: str
+    email: EmailStr
 
 
 class Token(BaseModel):
