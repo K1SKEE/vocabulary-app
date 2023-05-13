@@ -1,12 +1,14 @@
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt, JWTError
+from pydantic import EmailStr
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette import status
 
 import settings
+from api.redis_connectors import RedisConnectors
 from api.schemas import Token, UserCreateForm, UserCreateResponse
-from api.utils import Hasher, JWT
+from api.utils import Hasher, JWT, EmailClientManager
 from db.managers import UserManager
 from db.models import User
 from db.session import get_db
@@ -28,6 +30,14 @@ async def create_new_user(body: UserCreateForm,
             salt=salt
         )
         return UserCreateResponse(email=body.email)
+
+
+async def send_confirmation_token_to_email(
+        to_email: EmailStr, email_manager: EmailClientManager,
+        redis: RedisConnectors):
+    token = await email_manager.send_email(to_email)
+    token = token.split('.')
+    redis.email_manager_conn.set(to_email, token[0])
 
 
 async def _get_user_for_auth(
