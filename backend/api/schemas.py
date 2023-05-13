@@ -21,7 +21,7 @@ class UserCreateForm(BaseModel):
 
 
 class UserCreateResponse(BaseModel):
-    email: EmailStr
+    response_text: str
 
 
 class Token(BaseModel):
