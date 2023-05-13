@@ -1,3 +1,4 @@
+import base64
 import hashlib
 import os
 from datetime import timedelta, datetime
@@ -5,8 +6,10 @@ from typing import Generator
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import secrets
 
 from jose import jwt
+from cryptography.fernet import Fernet, InvalidToken
 from fastapi import WebSocket
 from pydantic import EmailStr
 
@@ -135,3 +138,27 @@ class EmailClientManager:
         msg.attach(MIMEText(body, 'html'))
         text = msg.as_string()
         return text, token
+
+
+class ConfirmationToken:
+    key = Fernet.generate_key()
+    cipher_suite = Fernet(key)
+
+    @classmethod
+    def generate_confirmation_token(cls, email: EmailStr) -> str:
+        token = secrets.token_urlsafe(32)
+        payload = base64.urlsafe_b64encode(
+            cls.cipher_suite.encrypt(email.encode())).decode()
+        return f'{token}.{payload}.{cls.key.decode()}'
+
+    @classmethod
+    def decrypt_confirmation_token(cls, token: str) -> tuple | None:
+        try:
+            token_parts = token.split('.')
+            token_key = token_parts[2].encode()
+            suite = Fernet(token_key)
+            email = suite.decrypt(
+                base64.urlsafe_b64decode(token_parts[1].encode())).decode()
+            return email, token_parts[0]
+        except (IndexError, ValueError, TypeError, InvalidToken):
+            return None
