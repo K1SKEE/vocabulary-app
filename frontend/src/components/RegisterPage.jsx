@@ -1,20 +1,40 @@
-import React, { useState } from 'react'
-import { NavLink } from 'react-router-dom';
+import React, { useState, useEffect } from 'react'
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import VocabularyAppService from '../VocabularyAppService';
 
 const vocabularyService = new VocabularyAppService()
 
 const RegisterPage = () => {
+    const [email, setEmail] = useState('')
     const [username, setUsername] = useState('')
     const [password_1, setPassword_1] = useState('')
     const [password_2, setPassword_2] = useState('')
     const [registered, setRegistered] = useState(null);
     const [error, setError] = useState('');
+    const location = useLocation();
+    const navigate = useNavigate();
+
+
+    useEffect(() => {
+        const activateToken = new URLSearchParams(location.search).get('token');
+        if (activateToken) {
+            const fetchSearch = async () => {
+                const tokenData = await vocabularyService.confirmRegistration(activateToken);
+                localStorage.setItem('access_token', tokenData.access_token);
+                localStorage.setItem('refresh_token', tokenData.refresh_token);
+                localStorage.setItem('token_type', tokenData.token_type);
+                navigate('/add');
+                window.location.reload();
+            }
+            fetchSearch();
+        }
+    }, [location]);
 
     const handleSubmit = async (event) => {
         event.preventDefault();
         try {
             const response = await vocabularyService.register({
+                'email': email,
                 'username': username,
                 'password_1': password_1,
                 'password_2': password_2
@@ -37,12 +57,7 @@ const RegisterPage = () => {
                             <h3 class="Auth-form-title">Registration successful!</h3>
                             <ul class="Result-list">
                                 <li class="Result-list-item">
-                                    <span class="Result-label">Ваш логін: </span>
-                                    <span class="Result-value">{registered.username}</span>
-                                </li>
-                                <li class="Result-list-item">
-                                    <span class="Result-label">Ваш пароль: </span>
-                                    <span class="Result-value">{registered.password}</span>
+                                    <span class="Result-value">{registered.response_text}</span>
                                 </li>
                             </ul>
                         </div>
@@ -51,6 +66,18 @@ const RegisterPage = () => {
                     <>
                         <div className="Auth-form-content">
                             <h3 className="Auth-form-title">Реєстрація</h3>
+                            <div className="form-group mt-3">
+                                <label>E-mail</label>
+                                <input
+                                    id='email'
+                                    type="text"
+                                    className="form-control mt-1"
+                                    placeholder="Enter login"
+                                    maxLength='20'
+                                    required={true}
+                                    onChange={(event) => setEmail(event.target.value)}
+                                />
+                            </div>
                             <div className="form-group mt-3">
                                 <label>Логін</label>
                                 <input
