@@ -131,7 +131,7 @@ class EmailClientManager:
         msg['Subject'] = "Activate your account"
         token = ConfirmationToken.generate_confirmation_token(to_email)
         body = f"""
-                <a href="http://localhost/activate?token={token}">
+                <a href="http://localhost/register?token={token}">
                     Activate account
                 </a>
                 """
