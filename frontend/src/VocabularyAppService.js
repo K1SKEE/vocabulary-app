@@ -25,6 +25,18 @@ class VocabularyAppService {
         return response.data;
     }
 
+    async confirmRegistration(token) {
+        const url = `${API_URL}/register/activate?token=${token}`
+        try {
+            const response = await axios.patch(url)
+            return response.data;
+        } catch (error) {
+            if (error.response && error.response.data) {
+                return error.response.data.detail;
+            }
+        }
+    }
+
     async login(user) {
         const url = `${API_URL}/token`
         const response = await axios.post(url, user);
