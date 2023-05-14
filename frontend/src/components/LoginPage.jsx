@@ -3,7 +3,6 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import VocabularyAppService from '../VocabularyAppService';
 
 
-
 const vocabularyService = new VocabularyAppService()
 
 const LoginPage = () => {
@@ -38,7 +37,7 @@ const LoginPage = () => {
                 <div className="Auth-form-content">
                     <h3 className="Auth-form-title">Вхід</h3>
                     <div className="form-group mt-3">
-                        <label>Логін</label>
+                        <label>E-mail або Логін</label>
                         <input
                             id='username'
                             name='username'
