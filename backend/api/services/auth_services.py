@@ -74,6 +74,11 @@ async def authenticate_user(username: str,
         return
     if not Hasher.check_password(password, user.hashed_password, user.salt):
         return
+    if user.is_active is False:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Your account isn't activated",
+        )
     _token, _refresh_token = JWT.create_token_for_access(user=user)
     return Token(access_token=_token, refresh_token=_refresh_token)
 
