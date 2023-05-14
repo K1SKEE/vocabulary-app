@@ -9,7 +9,8 @@ from api.redis_connectors import RedisConnectors
 from api.schemas import Token, UserCreateForm, UserCreateResponse
 from api.services.auth_services import (
     authenticate_user, get_current_user_from_token, refresh_token_service,
-    create_new_user, send_confirmation_token_to_email
+    create_new_user, send_confirmation_token_to_email,
+    confirm_registration_service
 )
 from db.models import User
 from db.session import get_db
@@ -38,6 +39,18 @@ async def register_user(
         logger.error(err)
         raise HTTPException(status_code=503,
                             detail=f"Database error: User already exists.")
+
+
+@register_router.patch('/activate')
+async def confirm_registration(token: str,
+                               redis: RedisConnectors = Depends(),
+                               db: AsyncSession = Depends(get_db)
+                               ) -> Token:
+    result = await confirm_registration_service(token, redis, db)
+    if not result:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail="Incorrect user")
+    return result
 
 
 @login_router.post("/", response_model=Token)
